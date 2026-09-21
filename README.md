@@ -5,7 +5,6 @@ the achievements made during the history of Hack Club.
 
 Anyone can submit a page; an editor reviews it before it goes live.
 
-Astro (SSR) · Postgres · Pagefind. Needs Node 22.12+ and a Postgres **server**.
 
 ## Setup
 
@@ -50,17 +49,7 @@ kills site search.
 `npm run dev` · `npm run build` (build + search index) · `npm start` ·
 `npm run format`
 
-Deploy is a plain Node server (`@astrojs/node` standalone). `Procfile` included.
+Deploy is a plain Node server (`@astrojs/node` standalone).
 
-## Gotchas
-
-- Community pages are missing from search, `/special/all-pages` and category
-  listings — those read the markdown collection only.
-- Authorship signals on the review page are **advisory heuristics, not proof**.
-  Never reject on the score alone.
-- Image uploads are sniffed by magic bytes and stored in Postgres. SVG is
-  rejected deliberately (scriptable, same-origin).
-- Nothing notifies authors; "request changes" relies on them revisiting their
-  link.
-- One shared admin password, so the audit trail can't attribute actions.
-- Rate limiting is per-process and resets on restart.
+## AI Usage
+I have used AI to adopt the official hackclub design, apart from that I have used it to make a basic backend for admin tools and took suggestions for what features we can add.
