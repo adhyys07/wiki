@@ -15,7 +15,12 @@ function getWikiPermalinks() {
 export default defineConfig({
   output: "server",
   adapter: node({ mode: "standalone" }),
-  site: "https://wiki.hackclub.com",
+  site: "https://wiki.adhyys.hackclub.app",
+   security: {
+     allowedDomains: [
+       { hostname: "wiki.adhyys.hackclub.app", protocol: "https" },
+     ],
+   },
   vite: {
     define: {
       GITHUB_EDIT_BASE: JSON.stringify(
