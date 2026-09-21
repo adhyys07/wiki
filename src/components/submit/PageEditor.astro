@@ -106,11 +106,30 @@ const {
     </div>
   </div>
 
+  <div id="dupe-warn" class="dupe" hidden>
+    <strong>Similar pages already exist</strong>
+    <ul id="dupe-list"></ul>
+    <small>Consider improving one of those instead of starting over.</small>
+  </div>
+
   <div class="cfield">
     <label for="body">The page</label>
     <textarea id="body" name="body" rows="18" required
       >{values.body ?? ""}</textarea
     >
+    <input type="hidden" name="paste_ratio" id="paste-ratio" value="0" />
+    <div class="uploadrow">
+      <label class="uploadbtn">
+        <input
+          id="image-input"
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          hidden
+        />
+        Add an image
+      </label>
+      <span id="upload-msg"></span>
+    </div>
     <small>
       Markdown. <code>[[Page Name]]</code> links to another wiki page.
     </small>
@@ -258,6 +277,63 @@ const {
     color: var(--muted);
     margin-bottom: 1rem;
   }
+  .dupe {
+    background: color-mix(in srgb, var(--yellow) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--yellow) 40%, transparent);
+    border-radius: var(--radius-md);
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+  }
+  .dupe strong {
+    color: var(--yellow);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .dupe ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .dupe small {
+    color: var(--muted);
+  }
+
+  .uploadrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+  }
+  .uploadbtn {
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .uploadbtn:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  #upload-msg {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  #upload-msg[data-kind="error"] {
+    color: var(--red);
+  }
+
   .cpreview-empty {
     color: var(--muted);
     font-style: italic;
@@ -317,8 +393,117 @@ const {
   body.addEventListener("input", renderPreview);
   if (body.value.trim()) renderPreview();
 
+  /* ---- duplicate detection ---------------------------------------- */
+  const dupeWarn = document.getElementById("dupe-warn")!;
+  const dupeList = document.getElementById("dupe-list")!;
+  const description = document.getElementById(
+    "description",
+  ) as HTMLInputElement;
+
+  let dupeTimer: number | undefined;
+  const checkDupes = () => {
+    window.clearTimeout(dupeTimer);
+    dupeTimer = window.setTimeout(async () => {
+      if (title.value.trim().length < 3) {
+        dupeWarn.hidden = true;
+        return;
+      }
+      const res = await fetch("/api/similar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: title.value,
+          description: description?.value ?? "",
+        }),
+      });
+      const { matches } = await res.json();
+      if (!matches?.length) {
+        dupeWarn.hidden = true;
+        return;
+      }
+      dupeList.innerHTML = matches
+        .map(
+          (m: any) =>
+            `<li><a href="${m.href}" target="_blank" rel="noopener">${m.title}</a>` +
+            ` <span style="opacity:.6">${Math.round(m.score * 100)}% similar</span></li>`,
+        )
+        .join("");
+      dupeWarn.hidden = false;
+    }, 450);
+  };
+  title.addEventListener("input", checkDupes);
+  description?.addEventListener("input", checkDupes);
+  if (title.value.trim()) checkDupes();
+
+  /* ---- paste tracking (an AI-review signal, not a gate) ------------- */
+  const pasteField = document.getElementById("paste-ratio") as HTMLInputElement;
+  let pastedChars = 0;
+  body.addEventListener("paste", (e) => {
+    pastedChars +=
+      (e as ClipboardEvent).clipboardData?.getData("text")?.length ?? 0;
+  });
+  const syncPaste = () => {
+    const len = body.value.length;
+    pasteField.value = len ? String(Math.min(1, pastedChars / len)) : "0";
+  };
+  body.addEventListener("input", syncPaste);
+
+  /* ---- image upload ------------------------------------------------- */
+  const imageInput = document.getElementById("image-input") as HTMLInputElement;
+  const uploadMsg = document.getElementById("upload-msg")!;
+
+  async function upload(file: File) {
+    uploadMsg.removeAttribute("data-kind");
+    uploadMsg.textContent = `Uploading ${file.name}…`;
+
+    const fd = new FormData();
+    fd.append("file", file);
+    const sid = form.querySelector<HTMLInputElement>(
+      'input[name="submission_id"]',
+    );
+    const tok = form.querySelector<HTMLInputElement>('input[name="token"]');
+    if (sid) fd.append("submission_id", sid.value);
+    if (tok) fd.append("token", tok.value);
+
+    const res = await fetch("/api/images", { method: "POST", body: fd });
+    const data = await res.json().catch(() => ({ error: "Upload failed." }));
+
+    if (!res.ok || !data.ok) {
+      uploadMsg.textContent = data.error ?? "Upload failed.";
+      uploadMsg.setAttribute("data-kind", "error");
+      return;
+    }
+
+    const snippet = `
+
+![${file.name.replace(/\.[^.]+$/, "")}](${data.url})
+
+`;
+    const at = body.selectionStart ?? body.value.length;
+    body.value = body.value.slice(0, at) + snippet + body.value.slice(at);
+    body.dispatchEvent(new Event("input", { bubbles: true }));
+    uploadMsg.textContent = `Inserted ${data.width ?? "?"}×${data.height ?? "?"}`;
+  }
+
+  imageInput.addEventListener("change", () => {
+    const f = imageInput.files?.[0];
+    if (f) upload(f);
+    imageInput.value = "";
+  });
+
+  // drag an image straight onto the textarea
+  body.addEventListener("dragover", (e) => e.preventDefault());
+  body.addEventListener("drop", (e) => {
+    const f = (e as DragEvent).dataTransfer?.files?.[0];
+    if (f && f.type.startsWith("image/")) {
+      e.preventDefault();
+      upload(f);
+    }
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    syncPaste();
     btn.disabled = true;
     msg.textContent = "Sending…";
     msg.removeAttribute("data-kind");

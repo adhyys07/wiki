@@ -26,6 +26,9 @@ export interface Submission {
   /** Secret that lets an author return to their submission without an account. */
   edit_token: string | null;
   revision: number;
+  paste_ratio: number;
+  ai_score: number | null;
+  ai_signals: unknown | null;
 }
 
 export interface SubmissionEvent {
@@ -144,6 +147,24 @@ export function ensureSchema() {
 
       CREATE INDEX IF NOT EXISTS submission_events_sub
         ON submission_events (submission_id, created_at);
+
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS paste_ratio real NOT NULL DEFAULT 0;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS ai_score    integer;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS ai_signals  jsonb;
+
+      CREATE TABLE IF NOT EXISTS images (
+        id            text PRIMARY KEY,
+        mime          text NOT NULL,
+        bytes         bytea NOT NULL,
+        byte_size     integer NOT NULL,
+        width         integer,
+        height        integer,
+        submission_id bigint REFERENCES submissions(id) ON DELETE SET NULL,
+        uploaded_by   text NOT NULL DEFAULT 'anonymous',
+        created_at    timestamptz NOT NULL DEFAULT now()
+      );
+
+      CREATE INDEX IF NOT EXISTS images_submission ON images (submission_id);
     `);
   })();
   return schemaReady;
@@ -322,8 +343,9 @@ export async function getSubmissionByToken(
   id: number,
   token: string,
 ): Promise<Submission | null> {
+  if (!token || !Number.isInteger(id) || id <= 0) return null;
   const row = await getSubmission(id);
-  if (!row?.edit_token || !token) return null;
+  if (!row?.edit_token) return null;
   const a = Buffer.from(row.edit_token);
   const b = Buffer.from(token);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
@@ -421,4 +443,86 @@ export async function createAdminPost(
     }
     throw err;
   }
+}
+
+/* ---------------------------------------------------------------- images */
+
+export interface StoredImage {
+  id: string;
+  mime: string;
+  bytes: Buffer;
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+}
+
+export function newImageId(): string {
+  return crypto.randomBytes(12).toString("base64url");
+}
+
+export async function saveImage(img: {
+  mime: string;
+  bytes: Buffer;
+  width: number | null;
+  height: number | null;
+  submissionId: number | null;
+  uploadedBy: string;
+}): Promise<string> {
+  await ensureSchema();
+  const id = newImageId();
+  await getPool().query(
+    `INSERT INTO images (id, mime, bytes, byte_size, width, height, submission_id, uploaded_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [
+      id,
+      img.mime,
+      img.bytes,
+      img.bytes.length,
+      img.width,
+      img.height,
+      img.submissionId,
+      img.uploadedBy,
+    ],
+  );
+  return id;
+}
+
+export async function getImage(id: string): Promise<StoredImage | null> {
+  await ensureSchema();
+  const { rows } = await getPool().query<StoredImage>(
+    `SELECT id, mime, bytes, byte_size, width, height FROM images WHERE id = $1`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+/* ----------------------------------------------------- duplicate matching */
+
+/** Title + description of every approved page, for similarity comparison. */
+export async function listApprovedForMatching(): Promise<
+  { slug: string; title: string; description: string }[]
+> {
+  await ensureSchema();
+  const { rows } = await getPool().query<{
+    slug: string;
+    title: string;
+    description: string;
+  }>(
+    `SELECT slug, title, description FROM submissions WHERE status = 'approved'`,
+  );
+  return rows;
+}
+
+/* ------------------------------------------------------------- ai signals */
+
+export async function saveAssessment(
+  id: number,
+  pasteRatio: number,
+  score: number,
+  signals: unknown,
+): Promise<void> {
+  await getPool().query(
+    `UPDATE submissions SET paste_ratio = $2, ai_score = $3, ai_signals = $4 WHERE id = $1`,
+    [id, pasteRatio, score, JSON.stringify(signals)],
+  );
 }

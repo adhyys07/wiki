@@ -1,5 +1,10 @@
 import type { APIRoute } from "astro";
-import { getSubmissionByToken, resubmit } from "../../../lib/db";
+import {
+  getSubmissionByToken,
+  resubmit,
+  saveAssessment,
+} from "../../../lib/db";
+import { assess } from "../../../lib/aiSignals";
 import { sameOrigin } from "../../../lib/auth";
 
 export const prerender = false;
@@ -48,6 +53,10 @@ export const POST: APIRoute = async ({ request, params, url }) => {
     categories: split("categories"),
     tags: split("tags"),
   });
+
+  const pasteRatio = Math.max(0, Math.min(1, Number(str("paste_ratio")) || 0));
+  const assessment = assess(body, pasteRatio);
+  await saveAssessment(id, pasteRatio, assessment.score, assessment.signals);
 
   return new Response(
     JSON.stringify({

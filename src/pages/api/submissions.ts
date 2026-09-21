@@ -1,6 +1,11 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
-import { createSubmission, getApprovedBySlug } from "../../lib/db";
+import {
+  createSubmission,
+  getApprovedBySlug,
+  saveAssessment,
+} from "../../lib/db";
+import { assess } from "../../lib/aiSignals";
 import { slugify } from "../../lib/markdown";
 import { sameOrigin } from "../../lib/auth";
 
@@ -82,6 +87,11 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
     author_name: str("author_name").slice(0, 80),
     author_contact: str("author_contact").slice(0, 160),
   });
+
+  // Advisory only — surfaced to the reviewer, never used to auto-reject.
+  const pasteRatio = Math.max(0, Math.min(1, Number(str("paste_ratio")) || 0));
+  const assessment = assess(body, pasteRatio);
+  await saveAssessment(id, pasteRatio, assessment.score, assessment.signals);
 
   return new Response(
     JSON.stringify({
