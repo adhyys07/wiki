@@ -1,4 +1,8 @@
 ---
+// Canonical pages stay PRERENDERED so Pagefind can index them at build time.
+// Approved community submissions live at /wiki/c/[slug] and are server-rendered.
+export const prerender = true;
+
 import { getCollection, render } from "astro:content";
 import Base from "../../layouts/Base.astro";
 import WikiLayout from "../../components/layout/WikiLayout.astro";

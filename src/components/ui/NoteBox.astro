@@ -36,9 +36,9 @@ const displayTitle = title || label;
 
 <style>
   .notebox {
-    border-left: 4px solid var(--note-color);
-    background: color-mix(in srgb, var(--note-color) 8%, var(--elevated));
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border: 1px solid color-mix(in srgb, var(--note-color) 35%, transparent);
+    background: color-mix(in srgb, var(--note-color) 11%, transparent);
+    border-radius: var(--radius-md);
     padding: 0.875rem 1.25rem;
     margin: 1.5rem 0;
   }
@@ -55,14 +55,16 @@ const displayTitle = title || label;
   }
 
   .notebox-title {
-    font-weight: 700;
-    font-size: 0.9375rem;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
     color: var(--note-color);
   }
 
   .notebox-body {
     font-size: 0.9375rem;
-    color: var(--text);
+    color: var(--text-secondary);
     line-height: 1.6;
   }
 

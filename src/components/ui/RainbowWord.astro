@@ -1,0 +1,35 @@
+---
+export interface Props {
+  word: string;
+}
+
+const { word } = Astro.props;
+
+// One hue per letter, cycling — the way "teens" is set on hackclub.com.
+const hues = [
+  "--orange",
+  "--yellow",
+  "--green",
+  "--cyan",
+  "--blue",
+  "--purple",
+  "--red",
+];
+---
+
+<span class="rainbow"
+  >{
+    word
+      .split("")
+      .map((ch, i) => (
+        <span style={`color: var(${hues[i % hues.length]})`}>{ch}</span>
+      ))
+  }</span
+>
+
+<style>
+  .rainbow {
+    white-space: nowrap;
+  }
+  /* Inline spans don't interrupt screen-reader word flow, so no ARIA needed. */
+</style>

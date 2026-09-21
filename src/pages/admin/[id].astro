@@ -1,0 +1,154 @@
+---
+export const prerender = false;
+import Base from "../../layouts/Base.astro";
+import { getSubmission } from "../../lib/db";
+import { renderArticle } from "../../lib/markdown";
+
+const id = Number(Astro.params.id);
+const row = Number.isInteger(id) ? await getSubmission(id) : null;
+if (!row) return new Response(null, { status: 404 });
+
+const { html } = renderArticle(row.body);
+const error = Astro.url.searchParams.get("error");
+---
+
+<Base title={`Review — ${row.title}`} noindex>
+  <main class="admin">
+    <a href="/admin" class="back">← Back to queue</a>
+
+    {error && <p class="err">{error}</p>}
+
+    <p class="submitted">
+      Submitted by <strong>{row.author_name || "anonymous"}</strong>
+      {row.author_contact && <> · {row.author_contact}</>}
+      · {new Date(row.created_at).toLocaleString()} · status <strong
+        >{row.status}</strong
+      >
+    </p>
+
+    <form method="post" action="/api/admin/review" class="review">
+      <input type="hidden" name="id" value={row.id} />
+
+      <label for="title">Title</label>
+      <input id="title" name="title" value={row.title} />
+
+      <label for="slug">Slug</label>
+      <input id="slug" name="slug" value={row.slug} />
+
+      <label for="body">Body — edit before approving if it needs a fix</label>
+      <textarea id="body" name="body" rows="20">{row.body}</textarea>
+
+      <label for="admin_note">Internal note</label>
+      <input
+        id="admin_note"
+        name="admin_note"
+        value={row.admin_note}
+        placeholder="Why you approved or rejected this"
+      />
+
+      <div class="verdict">
+        <button type="submit" name="action" value="approve" class="approve">
+          Approve &amp; publish
+        </button>
+        <button type="submit" name="action" value="reject" class="reject">
+          Reject
+        </button>
+      </div>
+    </form>
+
+    <section class="rendered">
+      <h2>Rendered</h2>
+      <article class="wiki-prose" set:html={html} />
+    </section>
+  </main>
+</Base>
+
+<style>
+  .admin {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .back {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .err {
+    color: var(--red);
+    font-size: 0.9rem;
+    margin: 1rem 0;
+  }
+  .submitted {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 1rem 0 1.5rem;
+  }
+
+  .review {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .review label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.8rem;
+  }
+  .review input,
+  .review textarea {
+    font: inherit;
+    background: var(--elevated);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.8rem;
+  }
+  .review textarea {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    resize: vertical;
+  }
+
+  .verdict {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .verdict button {
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.65rem 1.4rem;
+  }
+  .approve {
+    background: var(--green);
+    color: #10231d;
+  }
+  .reject {
+    background: transparent;
+    color: var(--red);
+    border: 1.5px solid var(--red);
+  }
+
+  .rendered {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .rendered h2 {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+</style>

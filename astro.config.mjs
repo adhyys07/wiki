@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import { readdirSync, existsSync } from "fs";
 import remarkWikiLink from "remark-wiki-link";
+import node from "@astrojs/node";
 
 function getWikiPermalinks() {
   const dir = "src/content/wiki";
@@ -12,7 +13,8 @@ function getWikiPermalinks() {
 }
 
 export default defineConfig({
-  output: "static",
+  output: "server",
+  adapter: node({ mode: "standalone" }),
   site: "https://wiki.hackclub.com",
   vite: {
     define: {

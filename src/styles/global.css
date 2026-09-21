@@ -10,37 +10,55 @@
 /* ---- Design Tokens ---- */
 :root,
 [data-theme="dark"] {
-  --text: #e8e8f0;
-  --text-secondary: #b0b0c4;
-  --background: #0e0e14;
-  --elevated: #16161f;
-  --elevated-2: #1c1c28;
-  --sheet: #13131b;
-  --sunken: #0a0a10;
-  --border: #252535;
-  --border-hover: #353548;
+  /* Brand — unchanged, these were already correct */
   --red: #ec3750;
-  --red-dim: rgba(236, 55, 80, 0.12);
-  --red-glow: rgba(236, 55, 80, 0.25);
   --orange: #ff8c37;
   --yellow: #f1c40f;
   --green: #33d6a6;
   --cyan: #5bc0de;
   --blue: #338eda;
-  --muted: #6e6e8a;
-  --muted-2: #9090a8;
-  --shadow: rgba(0, 0, 0, 0.55);
-  --shadow-lg: rgba(0, 0, 0, 0.75);
+  --purple: #a633d6;
+
+  /* Maroon ground */
+  --background: #2a0f13;
+  --sheet: #1c0a0d;
+  --sunken: #150708;
+  --elevated: rgba(249, 240, 228, 0.06);
+  --elevated-2: rgba(249, 240, 228, 0.1);
+
+  /* Cream ink */
+  --text: #f9f0e4;
+  --text-secondary: rgba(249, 240, 228, 0.78);
+  --muted: rgba(249, 240, 228, 0.52);
+  --muted-2: rgba(249, 240, 228, 0.68);
+
+  --border: rgba(249, 240, 228, 0.14);
+  --border-hover: rgba(249, 240, 228, 0.3);
+
+  --red-dim: rgba(236, 55, 80, 0.14);
+  --red-glow: rgba(236, 55, 80, 0.3);
+
+  --shadow: rgba(0, 0, 0, 0.45);
+  --shadow-lg: rgba(0, 0, 0, 0.7);
+
+  /* Hero */
+  --hero-grad: radial-gradient(
+    120% 130% at 50% 0%,
+    #240d11 0%,
+    #3a1016 45%,
+    #6b1520 100%
+  );
+  --blueprint: rgba(236, 55, 80, 0.3);
 
   /* Semantic aliases */
   --sidebar-bg: var(--sheet);
   --sidebar-border: var(--border);
-  --link: #5b9cf6;
-  --link-hover: #7fb3ff;
+  --link: #ec3750;
+  --link-hover: #ff8c37;
   --heading: var(--text);
   --tag-bg: var(--elevated);
   --tag-text: var(--muted-2);
-  --code-bg: var(--sunken);
+  --code-bg: rgba(0, 0, 0, 0.32);
   --blockquote-border: var(--red);
 
   /* Spacing */
@@ -51,13 +69,14 @@
 
   /* Radius */
   --radius-sm: 5px;
-  --radius-md: 9px;
+  --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Typography */
-  --font-body: "Phantom Sans", system-ui, sans-serif;
-  --font-mono: "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  /* Typography — mirrors hackclub.com's own two-face split */
+  --font-display: "Zarathustra", "Cormorant", Georgia, serif;
+  --font-body: "Phantom Sans", "Geologica", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Transitions */
   --transition-fast: 120ms ease;
@@ -66,25 +85,31 @@
 }
 
 [data-theme="light"] {
-  --text: #1a1a2e;
-  --text-secondary: #3d3d5c;
-  --background: #f6f6fa;
-  --elevated: #ffffff;
-  --elevated-2: #f0f0f8;
-  --sheet: #f0f0f8;
-  --sunken: #e4e4f0;
-  --border: #d8d8ea;
-  --border-hover: #b8b8d0;
-  --muted: #7a7a98;
-  --muted-2: #5c5c78;
-  --shadow: rgba(0, 0, 0, 0.08);
-  --shadow-lg: rgba(0, 0, 0, 0.15);
-  --red-dim: rgba(236, 55, 80, 0.08);
-  --red-glow: rgba(236, 55, 80, 0.18);
+  --background: #f9f2e7;
+  --sheet: #fffaf2;
+  --sunken: #f2e7d8;
+  --elevated: #fffaf2;
+  --elevated-2: #f5ece0;
+
+  --text: #2d1014;
+  --text-secondary: #5f4640;
+  --muted: #96837a;
+  --muted-2: #7a655c;
+
+  --border: #e3d5c4;
+  --border-hover: #cbb8a3;
+
+  --red-dim: rgba(236, 55, 80, 0.09);
+  --red-glow: rgba(236, 55, 80, 0.2);
+
+  --shadow: rgba(45, 16, 20, 0.1);
+  --shadow-lg: rgba(45, 16, 20, 0.18);
+
   --sidebar-bg: var(--sheet);
-  --link: #1a56b0;
-  --link-hover: #338eda;
-  --code-bg: var(--sunken);
+  /* NOT brand red: #ec3750 on cream is only 3.6:1, under the 4.5:1 floor */
+  --link: #c01432;
+  --link-hover: #ec3750;
+  --code-bg: #f2e7d8;
 }
 
 /* ---- Reset ---- */

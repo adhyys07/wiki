@@ -1,0 +1,80 @@
+---
+// Red technical line art behind the hero — the schematic layer
+// hackclub.com draws over its maroon ground.
+---
+
+<div class="blueprint" aria-hidden="true">
+  <svg class="bp bp--console" viewBox="0 0 150 100">
+    <rect x="8" y="18" width="134" height="64" rx="9"></rect>
+    <circle cx="36" cy="50" r="13"></circle>
+    <path d="M36 42v16M28 50h16"></path>
+    <circle cx="108" cy="43" r="6"></circle>
+    <circle cx="124" cy="57" r="6"></circle>
+    <rect x="58" y="36" width="34" height="26" rx="3"></rect>
+  </svg>
+
+  <svg class="bp bp--plotter" viewBox="0 0 130 118">
+    <rect x="10" y="12" width="110" height="80" rx="4"></rect>
+    <path d="M10 30h110M30 12v80"></path>
+    <circle cx="75" cy="58" r="20"></circle>
+    <circle cx="75" cy="58" r="8"></circle>
+    <path d="M40 100h50l-6 14H46z"></path>
+  </svg>
+
+  <svg class="bp bp--iron" viewBox="0 0 120 70">
+    <path d="M6 58 L48 14 L62 28 L20 70Z"></path>
+    <path d="M48 14l18-10 14 14-10 18"></path>
+    <path d="M80 20h34M80 32h26"></path>
+  </svg>
+
+  <svg class="bp bp--mac" viewBox="0 0 110 80">
+    <rect x="14" y="10" width="82" height="56" rx="6"></rect>
+    <rect x="26" y="20" width="58" height="30" rx="2"></rect>
+    <path d="M40 66v10h30V66M30 76h50"></path>
+  </svg>
+</div>
+
+<style>
+  .blueprint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    color: var(--blueprint);
+  }
+
+  .bp {
+    position: absolute;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.1;
+  }
+
+  .bp--console {
+    left: 4%;
+    top: 16%;
+    width: 150px;
+  }
+  .bp--plotter {
+    right: 5%;
+    top: 12%;
+    width: 130px;
+  }
+  .bp--iron {
+    left: 16%;
+    bottom: 6%;
+    width: 120px;
+  }
+  .bp--mac {
+    right: 14%;
+    bottom: 4%;
+    width: 110px;
+  }
+
+  @media (max-width: 64em) {
+    .bp--iron,
+    .bp--mac {
+      display: none;
+    }
+  }
+</style>

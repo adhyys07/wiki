@@ -5,9 +5,9 @@
 
 .wiki-prose {
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: 1.0625rem;
   line-height: 1.75;
-  color: var(--text);
+  color: var(--text-secondary);
   max-width: var(--content-max);
 }
 
@@ -17,29 +17,31 @@
 .wiki-prose h3,
 .wiki-prose h4,
 .wiki-prose h5 {
-  font-family: var(--font-body);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 500; /* the serif carries size, not weight — 700 clots it */
+  letter-spacing: -0.015em;
   color: var(--heading);
-  line-height: 1.25;
+  line-height: 1.12;
+  text-wrap: balance;
   scroll-margin-top: 5rem;
 }
 
 .wiki-prose h1 {
-  font-size: 2rem;
+  font-size: 2.75rem;
   margin: 0 0 1.25rem;
 }
 .wiki-prose h2 {
-  font-size: 1.5rem;
+  font-size: 1.95rem;
   margin: 2.5rem 0 1rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.4rem;
 }
 .wiki-prose h3 {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   margin: 2rem 0 0.75rem;
 }
 .wiki-prose h4 {
-  font-size: 1rem;
+  font-size: 1.2rem;
   margin: 1.5rem 0 0.5rem;
 }
 
@@ -66,8 +68,9 @@
 }
 
 .wiki-prose .wiki-link--new {
-  color: var(--muted);
+  color: var(--red);
   text-decoration-style: dashed;
+  opacity: 0.85;
 }
 
 /* ---- Lists ---- */

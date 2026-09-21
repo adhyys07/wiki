@@ -1,9 +1,12 @@
 ---
+export const prerender = true;
 import { getCollection } from "astro:content";
 import Base from "../layouts/Base.astro";
 import WikiLayout from "../components/layout/WikiLayout.astro";
 import { getCategories, categorySlug } from "../lib/getCategories";
 import { getRecentChanges } from "../lib/getRecentChanges";
+import Blueprint from "../components/layout/Blueprint.astro";
+import RainbowWord from "../components/ui/RainbowWord.astro";
 
 const allPages = await getCollection("wiki");
 const featured = allPages.filter((p) => p.data.featured);
@@ -36,144 +39,59 @@ function getCatIcon(cat: string): string {
   <WikiLayout showToc={false}>
     <!-- Hero -->
     <section class="hero">
-      <div class="hero-bg-grid" aria-hidden="true"></div>
-      <div class="hero-content">
-        <div class="hero-eyebrow">
-          <span class="hero-badge">
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-              <path d="M2 17l10 5 10-5"></path>
-              <path d="M2 12l10 5 10-5"></path>
-            </svg>
-            Community Wiki
-          </span>
-        </div>
-        <h1 class="hero-title">
-          <span class="hero-title-hack">Hack Club</span>
-          <span class="hero-title-wiki">Wiki</span>
-        </h1>
-        <p class="hero-desc">
-          The community-maintained knowledge base for Hack Club. Find everything
-          about clubs, hackathons, programs, and the people who make it happen.
-        </p>
-        <div class="hero-actions">
-          <a href="/wiki/getting-started" class="hero-btn hero-btn--primary">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"
-              ></path>
-              <path
-                d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"
-              ></path>
-            </svg>
-            Get Started
-          </a>
-          <a href="/special/all-pages" class="hero-btn hero-btn--ghost">
-            Browse All Pages
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </a>
-        </div>
-      </div>
+      <Blueprint />
 
-      <div class="hero-visual" aria-hidden="true">
-        <div class="hero-mascot-ring"></div>
-        <div class="hero-mascot-inner">
+      <!-- Placeholder fills — swap for real club photos: <img src="…" alt="" /> -->
+      <div class="polaroid polaroid--1" aria-hidden="true"><span></span></div>
+      <div class="polaroid polaroid--2" aria-hidden="true"><span></span></div>
+      <div class="polaroid polaroid--3" aria-hidden="true"><span></span></div>
+      <div class="polaroid polaroid--4" aria-hidden="true"><span></span></div>
+
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Where <RainbowWord word="hackers" /> write it down.
+        </h1>
+
+        <p class="hero-desc">
+          The community-maintained knowledge base for Hack Club — clubs,
+          hackathons, hardware, and the people who make it happen. Anyone can
+          edit.
+        </p>
+
+        <form
+          class="hero-search"
+          action="/special/search"
+          method="get"
+          role="search"
+        >
           <svg
-            width="160"
-            height="160"
-            viewBox="0 0 200 200"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
             fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            aria-hidden="true"
           >
-            <defs>
-              <radialGradient id="bg-glow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#ec3750" stop-opacity="0.3"
-                ></stop>
-                <stop offset="100%" stop-color="#ec3750" stop-opacity="0"
-                ></stop>
-              </radialGradient>
-              <linearGradient id="flag-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#ec3750"></stop>
-                <stop offset="100%" stop-color="#ff6b7a"></stop>
-              </linearGradient>
-              <linearGradient
-                id="ground-grad"
-                x1="0%"
-                y1="0%"
-                x2="0%"
-                y2="100%"
-              >
-                <stop offset="0%" stop-color="#33d6a6" stop-opacity="0.5"
-                ></stop>
-                <stop offset="100%" stop-color="#33d6a6" stop-opacity="0.1"
-                ></stop>
-              </linearGradient>
-            </defs>
-            <!-- Background glow -->
-            <circle cx="100" cy="100" r="88" fill="url(#bg-glow)"></circle>
-            <!-- Ground -->
-            <ellipse cx="100" cy="158" rx="52" ry="14" fill="url(#ground-grad)"
-            ></ellipse>
-            <!-- Ground ring -->
-            <ellipse
-              cx="100"
-              cy="158"
-              rx="30"
-              ry="8"
-              fill="#33d6a6"
-              opacity="0.15"></ellipse>
-            <!-- Pole -->
-            <rect
-              x="96.5"
-              y="50"
-              width="5"
-              height="108"
-              rx="2.5"
-              fill="white"
-              opacity="0.92"></rect>
-            <!-- Flag -->
-            <path d="M101.5 52 L158 72 L101.5 94 Z" fill="url(#flag-grad)"
-            ></path>
-            <!-- Flag shine -->
-            <path d="M101.5 52 L158 72 L135 63 Z" fill="white" opacity="0.12"
-            ></path>
-            <!-- Base circle -->
-            <circle cx="99" cy="158" r="6" fill="white" opacity="0.35"></circle>
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
           </svg>
-        </div>
+          <input
+            id="hero-q"
+            name="q"
+            type="search"
+            placeholder="How do I start a club?"
+            aria-label="Search the wiki"
+          />
+          <button type="submit">Search</button>
+        </form>
+
+        <p class="hero-micro">
+          {allPages.length} pages, all of them editable. Start with <a
+            href="/wiki/getting-started">Getting Started</a
+          >.
+        </p>
       </div>
     </section>
 
@@ -504,174 +422,186 @@ function getCatIcon(cat: string): string {
   /* ---- Hero ---- */
   .hero {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
-    padding: 3.5rem 0 3rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2.5rem;
     overflow: hidden;
-  }
-
-  .hero-bg-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.25;
-    mask-image: radial-gradient(
-      ellipse 60% 100% at 80% 50%,
-      black 20%,
-      transparent 70%
-    );
-    pointer-events: none;
+    /* full-bleed out of .wiki-article's padding */
+    margin: -2rem -2.5rem 0;
+    padding: 4.5rem 2rem 5rem;
+    background: var(--hero-grad);
+    color: #f9f0e4;
+    display: flex;
+    justify-content: center;
   }
 
   .hero-content {
-    flex: 1;
-    min-width: 0;
     position: relative;
-    z-index: 1;
-  }
-
-  .hero-eyebrow {
-    margin-bottom: 1rem;
-  }
-
-  .hero-badge {
-    display: inline-flex;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
-    background: var(--red-dim);
-    color: var(--red);
-    border: 1px solid rgba(236, 55, 80, 0.25);
-    border-radius: 999px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.25rem 0.8rem;
+    text-align: center;
+    gap: 1.1rem;
+    width: 100%;
   }
 
   .hero-title {
-    font-size: clamp(2.25rem, 5vw, 3.5rem);
-    font-weight: 900;
-    line-height: 1;
-    margin-bottom: 1rem;
-    letter-spacing: -0.025em;
-  }
-
-  .hero-title-hack {
-    color: var(--red);
-    display: block;
-  }
-
-  .hero-title-wiki {
-    color: var(--text);
-    display: block;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.4rem, 6.5vw, 4.4rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    max-width: 16ch;
+    margin: 0;
   }
 
   .hero-desc {
-    font-size: 1rem;
-    color: var(--muted-2);
-    line-height: 1.7;
-    max-width: 460px;
-    margin-bottom: 1.75rem;
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    color: rgba(249, 240, 228, 0.82);
+    max-width: 46ch;
+    margin: 0;
   }
 
-  .hero-actions {
+  /* search pill — hackclub.com's email capture, repurposed */
+  .hero-search {
     display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .hero-btn {
-    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.18s ease;
+    width: min(460px, 100%);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(249, 240, 228, 0.16);
+    border-radius: 999px;
+    padding: 0.35rem 0.35rem 0.35rem 1.1rem;
+    margin-top: 0.25rem;
+    color: rgba(249, 240, 228, 0.45);
+  }
+
+  .hero-search input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: 0;
+    outline: none;
+    font: inherit;
+    font-size: 0.95rem;
+    color: #f9f0e4;
+  }
+
+  .hero-search input::placeholder {
+    color: rgba(249, 240, 228, 0.45);
+  }
+
+  .hero-search button {
+    border: 0;
     cursor: pointer;
-    letter-spacing: -0.01em;
+    border-radius: 999px;
+    background: #f9f0e4;
+    color: #2a0f13;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.6rem 1.35rem;
+    white-space: nowrap;
+    transition: background var(--transition-fast);
   }
 
-  .hero-btn--primary {
-    background: var(--red);
-    color: #fff;
-    border: 1px solid var(--red);
-    box-shadow: 0 2px 12px rgba(236, 55, 80, 0.3);
+  .hero-search button:hover {
+    background: #fff;
   }
 
-  .hero-btn--primary:hover {
-    background: #d42f46;
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(236, 55, 80, 0.4);
+  .hero-micro {
+    font-size: 0.8125rem;
+    color: rgba(249, 240, 228, 0.62);
+    background: rgba(0, 0, 0, 0.26);
+    border-radius: 999px;
+    padding: 0.3rem 1rem;
+    margin: 0;
   }
 
-  .hero-btn--ghost {
-    background: var(--elevated);
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
+  .hero-micro a {
+    color: #f9f0e4;
+    text-underline-offset: 2px;
   }
 
-  .hero-btn--ghost:hover {
-    border-color: var(--border-hover);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-
-  /* Mascot */
-  .hero-visual {
-    position: relative;
-    flex-shrink: 0;
-    z-index: 1;
-  }
-
-  .hero-mascot-ring {
+  /* ---- Polaroids ---- */
+  .polaroid {
     position: absolute;
-    inset: -16px;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(236, 55, 80, 0.12) 0%,
-      transparent 70%
-    );
-    animation: pulse-ring 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse-ring {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.06);
-      opacity: 0.7;
-    }
-  }
-
-  .hero-mascot-inner {
-    animation: float 5s ease-in-out infinite;
-    position: relative;
     z-index: 1;
+    background: #f9f0e4;
+    padding: 6px 6px 17px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   }
 
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
+  .polaroid > span,
+  .polaroid img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  /* placeholder fills — delete once real photos are in */
+  .polaroid--1 > span {
+    background: linear-gradient(140deg, #ec3750, #ff8c37);
+  }
+  .polaroid--2 > span {
+    background: linear-gradient(140deg, #338eda, #33d6a6);
+  }
+  .polaroid--3 > span {
+    background: linear-gradient(140deg, #a633d6, #338eda);
+  }
+  .polaroid--4 > span {
+    background: linear-gradient(140deg, #f1c40f, #ff8c37);
+  }
+
+  .polaroid--1 {
+    left: 2.5%;
+    top: 14%;
+    width: 104px;
+    height: 104px;
+    transform: rotate(-7deg);
+  }
+  .polaroid--2 {
+    left: 5%;
+    bottom: 9%;
+    width: 84px;
+    height: 84px;
+    transform: rotate(6deg);
+  }
+  .polaroid--3 {
+    right: 3%;
+    top: 10%;
+    width: 96px;
+    height: 96px;
+    transform: rotate(8deg);
+  }
+  .polaroid--4 {
+    right: 6%;
+    bottom: 11%;
+    width: 78px;
+    height: 78px;
+    transform: rotate(-9deg);
+  }
+
+  /* These negative margins track .wiki-article's padding in WikiLayout.astro.
+     If that padding changes, change these too. */
+  @media (max-width: 64em) {
+    .hero {
+      margin: -1.5rem -1.75rem 0;
+      padding: 3rem 1.5rem 3.5rem;
     }
-    50% {
-      transform: translateY(-14px);
+    .polaroid {
+      display: none;
+    }
+  }
+
+  @media (max-width: 48em) {
+    .hero {
+      margin: -1.25rem -1rem 0;
+      padding: 2.5rem 1.25rem 3rem;
     }
   }
 
@@ -1044,31 +974,8 @@ function getCatIcon(cat: string): string {
 
   /* ---- Responsive ---- */
   @media (max-width: 48em) {
-    .hero {
-      flex-direction: column;
-      padding: 2rem 0;
-      text-align: center;
-    }
-
-    .hero-bg-grid {
-      display: none;
-    }
-
     .hero-desc {
       max-width: 100%;
-    }
-
-    .hero-actions {
-      justify-content: center;
-    }
-
-    .hero-visual {
-      order: -1;
-    }
-
-    .hero-mascot-inner svg {
-      width: 120px;
-      height: 120px;
     }
 
     .stats-bar {

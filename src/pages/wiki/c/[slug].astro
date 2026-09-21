@@ -1,0 +1,64 @@
+---
+// Approved community submissions. Server-rendered because the row can be
+// approved at any time — there is no build to wait for.
+export const prerender = false;
+
+import Base from "../../../layouts/Base.astro";
+import WikiLayout from "../../../components/layout/WikiLayout.astro";
+import Breadcrumb from "../../../components/layout/Breadcrumb.astro";
+import ArticleHeader from "../../../components/article/ArticleHeader.astro";
+import ArticleFooter from "../../../components/article/ArticleFooter.astro";
+import { getApprovedBySlug } from "../../../lib/db";
+import { renderArticle } from "../../../lib/markdown";
+
+const slug = Astro.params.slug!;
+const row = await getApprovedBySlug(slug);
+if (!row) return new Response(null, { status: 404 });
+
+const { html, headings } = renderArticle(row.body);
+
+const breadcrumbs = [
+  ...(row.categories[0]
+    ? [
+        {
+          label: row.categories[0],
+          href: `/category/${row.categories[0].toLowerCase().replace(/\s+/g, "-")}`,
+        },
+      ]
+    : []),
+  { label: row.title },
+];
+---
+
+<Base title={row.title} description={row.description}>
+  <WikiLayout headings={headings}>
+    <Breadcrumb crumbs={breadcrumbs} />
+    <ArticleHeader
+      title={row.title}
+      description={row.description}
+      categories={row.categories}
+      lastEdited={row.reviewed_at?.toISOString()}
+    />
+
+    <p class="community-note">
+      Contributed by {row.author_name || "an anonymous Hack Clubber"} and reviewed
+      by an editor.
+    </p>
+
+    <article class="wiki-prose" set:html={html} />
+
+    <ArticleFooter slug={slug} related={[]} showEdit={false} />
+  </WikiLayout>
+</Base>
+
+<style>
+  .community-note {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+</style>

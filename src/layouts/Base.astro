@@ -26,16 +26,18 @@ const ogImage = image
     <script is:inline>
       (function () {
         const stored = localStorage.getItem("hc-wiki-theme");
-        const theme =
-          stored ||
-          (window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light");
+        // Maroon is the intended first impression now, not an OS-derived preference.
+        const theme = stored === "light" || stored === "dark" ? stored : "dark";
         document.documentElement.setAttribute("data-theme", theme);
         document.documentElement.style.colorScheme = theme;
       })();
     </script>
-    <link rel="stylesheet" href="https://fonts.hackclub.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600&family=Geologica:wght@300;400;500;600;700&display=swap"
+    />
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
 

@@ -1,0 +1,167 @@
+---
+export const prerender = false;
+import Base from "../../layouts/Base.astro";
+import { listSubmissions, countByStatus, type Status } from "../../lib/db";
+
+const filter = (Astro.url.searchParams.get("status") ?? "pending") as Status;
+const valid: Status[] = ["pending", "approved", "rejected"];
+const status = valid.includes(filter) ? filter : "pending";
+
+const rows = await listSubmissions(status);
+const counts = await countByStatus();
+const done = Astro.url.searchParams.get("done");
+---
+
+<Base title="Review queue" noindex>
+  <main class="admin">
+    <header class="admin-head">
+      <h1>Review queue</h1>
+      <form method="post" action="/api/admin/logout">
+        <button type="submit" class="ghost">Sign out</button>
+      </form>
+    </header>
+
+    {
+      done && (
+        <p class="flash">
+          Submission {done === "approve" ? "approved and live" : "rejected"}.
+        </p>
+      )
+    }
+
+    <nav class="tabs">
+      {
+        valid.map((s) => (
+          <a
+            href={`/admin?status=${s}`}
+            class:list={["tab", { on: status === s }]}
+          >
+            {s} <span>{counts[s]}</span>
+          </a>
+        ))
+      }
+    </nav>
+
+    {
+      rows.length === 0 ? (
+        <p class="empty">Nothing here.</p>
+      ) : (
+        <ul class="queue">
+          {rows.map((r) => (
+            <li>
+              <a href={`/admin/${r.id}`}>
+                <strong>{r.title}</strong>
+                <span class="slug">/wiki/c/{r.slug}</span>
+                <span class="meta">
+                  {r.author_name || "anonymous"} ·{" "}
+                  {new Date(r.created_at).toLocaleDateString()} ·{" "}
+                  {r.body.trim().split(/\s+/).length} words
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </main>
+</Base>
+
+<style>
+  .admin {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .admin-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .admin-head h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 2.2rem;
+  }
+  .ghost {
+    font: inherit;
+    cursor: pointer;
+    background: none;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+  }
+
+  .flash {
+    background: color-mix(in srgb, var(--green) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
+    border-radius: var(--radius-md);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .tab {
+    text-decoration: none;
+    text-transform: capitalize;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+  }
+  .tab.on {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+  }
+  .tab span {
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .queue {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+  }
+  .queue a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-decoration: none;
+    color: inherit;
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+  }
+  .queue a:hover {
+    border-color: var(--border-hover);
+  }
+  .slug {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--red);
+  }
+  .meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+</style>
