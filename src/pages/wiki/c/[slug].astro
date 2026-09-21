@@ -40,6 +40,14 @@ const breadcrumbs = [
       lastEdited={row.reviewed_at?.toISOString()}
     />
 
+    {
+      row.starred && (
+        <p class="pick-badge">
+          <span aria-hidden="true">★</span> An editors' pick
+        </p>
+      )
+    }
+
     <p class="community-note">
       Contributed by {row.author_name || "an anonymous Hack Clubber"} and reviewed
       by an editor.
@@ -52,6 +60,21 @@ const breadcrumbs = [
 </Base>
 
 <style>
+  .pick-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--yellow);
+    background: color-mix(in srgb, var(--yellow) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--yellow) 40%, transparent);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    margin-bottom: 0.9rem;
+  }
   .community-note {
     font-size: 0.8125rem;
     color: var(--muted);

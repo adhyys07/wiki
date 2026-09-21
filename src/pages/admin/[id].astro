@@ -121,6 +121,28 @@ const dupes = findSimilar(
       )
     }
 
+    <form method="post" action="/api/admin/star" class="starform">
+      <input type="hidden" name="id" value={row.id} />
+      <input type="hidden" name="back" value={`/admin/${row.id}`} />
+      <button
+        type="submit"
+        class:list={["starbtn", { on: row.starred }]}
+        aria-pressed={row.starred ? "true" : "false"}
+      >
+        <span aria-hidden="true">{row.starred ? "★" : "☆"}</span>
+        {
+          row.starred
+            ? "Starred as an editors' pick"
+            : "Star as an editors' pick"
+        }
+      </button>
+      {
+        row.starred && row.starred_by && (
+          <span class="starmeta">by {row.starred_by}</span>
+        )
+      }
+    </form>
+
     <form method="post" action="/api/admin/review" class="review">
       <input type="hidden" name="id" value={row.id} />
 
@@ -326,6 +348,41 @@ const dupes = findSimilar(
   }
   .panel--ai .detail {
     grid-column: 2;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .starform {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1.25rem;
+  }
+  .starbtn {
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    transition: all var(--transition-fast);
+  }
+  .starbtn:hover {
+    border-color: var(--yellow);
+    color: var(--yellow);
+  }
+  .starbtn.on {
+    background: color-mix(in srgb, var(--yellow) 16%, transparent);
+    border-color: var(--yellow);
+    color: var(--yellow);
+  }
+  .starmeta {
     font-size: 0.78rem;
     color: var(--muted);
   }

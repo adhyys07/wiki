@@ -29,6 +29,9 @@ export interface Submission {
   paste_ratio: number;
   ai_score: number | null;
   ai_signals: unknown | null;
+  starred: boolean;
+  starred_at: Date | null;
+  starred_by: string | null;
 }
 
 export interface SubmissionEvent {
@@ -151,6 +154,12 @@ export function ensureSchema() {
       ALTER TABLE submissions ADD COLUMN IF NOT EXISTS paste_ratio real NOT NULL DEFAULT 0;
       ALTER TABLE submissions ADD COLUMN IF NOT EXISTS ai_score    integer;
       ALTER TABLE submissions ADD COLUMN IF NOT EXISTS ai_signals  jsonb;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS starred    boolean NOT NULL DEFAULT false;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS starred_at timestamptz;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS starred_by text;
+
+      CREATE INDEX IF NOT EXISTS submissions_starred
+        ON submissions (starred, starred_at DESC) WHERE starred;
 
       CREATE TABLE IF NOT EXISTS images (
         id            text PRIMARY KEY,
@@ -525,4 +534,36 @@ export async function saveAssessment(
     `UPDATE submissions SET paste_ratio = $2, ai_score = $3, ai_signals = $4 WHERE id = $1`,
     [id, pasteRatio, score, JSON.stringify(signals)],
   );
+}
+
+/* ------------------------------------------------------------ starring */
+
+/** Editors mark standout pages. Returns the new state. */
+export async function toggleStar(
+  id: number,
+  by: string,
+): Promise<{ ok: true; starred: boolean } | { ok: false; error: string }> {
+  await ensureSchema();
+  const { rows } = await getPool().query<{ starred: boolean }>(
+    `UPDATE submissions
+        SET starred    = NOT starred,
+            starred_at = CASE WHEN NOT starred THEN now() ELSE NULL END,
+            starred_by = CASE WHEN NOT starred THEN $2   ELSE NULL END
+      WHERE id = $1
+      RETURNING starred`,
+    [id, by],
+  );
+  if (!rows.length) return { ok: false, error: "Submission not found." };
+  await logEvent(id, by, rows[0].starred ? "starred" : "unstarred");
+  return { ok: true, starred: rows[0].starred };
+}
+
+export async function listStarred(): Promise<Submission[]> {
+  await ensureSchema();
+  const { rows } = await getPool().query<Submission>(
+    `SELECT * FROM submissions
+      WHERE starred AND status = 'approved'
+      ORDER BY starred_at DESC`,
+  );
+  return rows;
 }

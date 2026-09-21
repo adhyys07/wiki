@@ -62,7 +62,18 @@ const done = Astro.url.searchParams.get("done");
           {rows.map((r) => (
             <li>
               <a href={`/admin/${r.id}`}>
-                <strong>{r.title}</strong>
+                <strong>
+                  {r.starred && (
+                    <span
+                      class="starmark"
+                      title="Editors' pick"
+                      aria-label="Starred"
+                    >
+                      ★
+                    </span>
+                  )}
+                  {r.title}
+                </strong>
                 <span class="slug">/wiki/c/{r.slug}</span>
                 <span class="meta">
                   {r.author_name || "anonymous"} ·{" "}
@@ -176,6 +187,10 @@ const done = Astro.url.searchParams.get("done");
   }
   .queue a:hover {
     border-color: var(--border-hover);
+  }
+  .starmark {
+    color: var(--yellow);
+    margin-right: 0.35rem;
   }
   .slug {
     font-family: var(--font-mono);
