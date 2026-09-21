@@ -1,0 +1,50 @@
+---
+export const prerender = false;
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import PageEditor from "../../components/submit/PageEditor.astro";
+import { getCategories } from "../../lib/getCategories";
+
+const categoryNames = Object.keys(
+  getCategories(await getCollection("wiki")),
+).sort();
+---
+
+<Base title="New page" noindex>
+  <main class="admin">
+    <a href="/admin" class="back">← Back to queue</a>
+    <h1>Write a page</h1>
+    <p class="sub">Published immediately — this skips the review queue.</p>
+
+    <PageEditor
+      action="/api/admin/post"
+      submitLabel="Publish now"
+      showAuthor={false}
+      categoryNames={categoryNames}
+    />
+  </main>
+</Base>
+
+<style>
+  .admin {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .back {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .admin h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 2.2rem;
+    margin: 0.75rem 0 0.25rem;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.75rem;
+  }
+</style>

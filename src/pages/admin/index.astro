@@ -4,7 +4,12 @@ import Base from "../../layouts/Base.astro";
 import { listSubmissions, countByStatus, type Status } from "../../lib/db";
 
 const filter = (Astro.url.searchParams.get("status") ?? "pending") as Status;
-const valid: Status[] = ["pending", "approved", "rejected"];
+const valid: Status[] = [
+  "pending",
+  "changes_requested",
+  "approved",
+  "rejected",
+];
 const status = valid.includes(filter) ? filter : "pending";
 
 const rows = await listSubmissions(status);
@@ -16,15 +21,22 @@ const done = Astro.url.searchParams.get("done");
   <main class="admin">
     <header class="admin-head">
       <h1>Review queue</h1>
-      <form method="post" action="/api/admin/logout">
-        <button type="submit" class="ghost">Sign out</button>
-      </form>
+      <div class="head-actions">
+        <a href="/admin/new" class="newbtn">New page</a>
+        <form method="post" action="/api/admin/logout">
+          <button type="submit" class="ghost">Sign out</button>
+        </form>
+      </div>
     </header>
 
     {
       done && (
         <p class="flash">
-          Submission {done === "approve" ? "approved and live" : "rejected"}.
+          {done === "approve"
+            ? "Submission approved and live."
+            : done === "request_changes"
+              ? "Changes requested — send the author their link."
+              : "Submission rejected."}
         </p>
       )
     }
@@ -36,7 +48,7 @@ const done = Astro.url.searchParams.get("done");
             href={`/admin?status=${s}`}
             class:list={["tab", { on: status === s }]}
           >
-            {s} <span>{counts[s]}</span>
+            {s.replace(/_/g, " ")} <span>{counts[s]}</span>
           </a>
         ))
       }
@@ -83,6 +95,20 @@ const done = Astro.url.searchParams.get("done");
     font-family: var(--font-display);
     font-weight: 500;
     font-size: 2.2rem;
+  }
+  .head-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .newbtn {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    background: var(--red);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
   }
   .ghost {
     font: inherit;

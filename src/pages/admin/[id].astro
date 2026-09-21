@@ -1,15 +1,19 @@
 ---
 export const prerender = false;
 import Base from "../../layouts/Base.astro";
-import { getSubmission } from "../../lib/db";
+import { getSubmission, listEvents } from "../../lib/db";
 import { renderArticle } from "../../lib/markdown";
 
 const id = Number(Astro.params.id);
 const row = Number.isInteger(id) ? await getSubmission(id) : null;
 if (!row) return new Response(null, { status: 404 });
 
+const events = await listEvents(id);
 const { html } = renderArticle(row.body);
 const error = Astro.url.searchParams.get("error");
+const resumeUrl = row.edit_token
+  ? `/contribute/${row.id}?token=${row.edit_token}`
+  : null;
 ---
 
 <Base title={`Review — ${row.title}`} noindex>
@@ -22,9 +26,32 @@ const error = Astro.url.searchParams.get("error");
       Submitted by <strong>{row.author_name || "anonymous"}</strong>
       {row.author_contact && <> · {row.author_contact}</>}
       · {new Date(row.created_at).toLocaleString()} · status <strong
-        >{row.status}</strong
+        >{row.status.replace(/_/g, " ")}</strong
       >
     </p>
+
+    {
+      row.revision > 1 && (
+        <p class="revision">
+          Revision {row.revision} — the author has already reworked this.
+        </p>
+      )
+    }
+
+    {
+      events.length > 0 && (
+        <ol class="history">
+          {events.map((e) => (
+            <li>
+              <strong>{e.action.replace(/_/g, " ")}</strong>
+              <span>{e.actor}</span>
+              <time>{new Date(e.created_at).toLocaleString()}</time>
+              {e.note && <p>{e.note}</p>}
+            </li>
+          ))}
+        </ol>
+      )
+    }
 
     <form method="post" action="/api/admin/review" class="review">
       <input type="hidden" name="id" value={row.id} />
@@ -38,23 +65,51 @@ const error = Astro.url.searchParams.get("error");
       <label for="body">Body — edit before approving if it needs a fix</label>
       <textarea id="body" name="body" rows="20">{row.body}</textarea>
 
+      <label for="review_note">
+        Message to the author — required to request changes, and they will see
+        it
+      </label>
+      <textarea id="review_note" name="review_note" rows="3"
+        >{row.review_note}</textarea
+      >
+
       <label for="admin_note">Internal note</label>
       <input
         id="admin_note"
         name="admin_note"
         value={row.admin_note}
-        placeholder="Why you approved or rejected this"
+        placeholder="Only editors see this"
       />
 
       <div class="verdict">
         <button type="submit" name="action" value="approve" class="approve">
           Approve &amp; publish
         </button>
+        <button
+          type="submit"
+          name="action"
+          value="request_changes"
+          class="changes"
+        >
+          Request changes
+        </button>
         <button type="submit" name="action" value="reject" class="reject">
           Reject
         </button>
       </div>
     </form>
+
+    {
+      resumeUrl && (
+        <p class="resume">
+          Author's link — send this to them if you requested changes:
+          <code>
+            {Astro.url.origin}
+            {resumeUrl}
+          </code>
+        </p>
+      )
+    }
 
     <section class="rendered">
       <h2>Rendered</h2>
@@ -82,7 +137,39 @@ const error = Astro.url.searchParams.get("error");
   .submitted {
     font-size: 0.85rem;
     color: var(--muted);
-    margin: 1rem 0 1.5rem;
+    margin: 1rem 0 0.5rem;
+  }
+  .revision {
+    font-size: 0.85rem;
+    color: var(--orange);
+    margin-bottom: 1rem;
+  }
+
+  .history {
+    list-style: none;
+    margin: 0 0 1.75rem;
+    padding: 0 0 0 1rem;
+    border-left: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .history li {
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  .history strong {
+    color: var(--text);
+    text-transform: capitalize;
+  }
+  .history p {
+    flex-basis: 100%;
+    color: var(--text-secondary);
+    margin: 0.15rem 0 0;
   }
 
   .review {
@@ -132,10 +219,27 @@ const error = Astro.url.searchParams.get("error");
     background: var(--green);
     color: #10231d;
   }
+  .changes {
+    background: var(--yellow);
+    color: #2a1f03;
+  }
   .reject {
     background: transparent;
     color: var(--red);
     border: 1.5px solid var(--red);
+  }
+
+  .resume {
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .resume code {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--font-mono);
+    color: var(--red);
+    word-break: break-all;
   }
 
   .rendered {

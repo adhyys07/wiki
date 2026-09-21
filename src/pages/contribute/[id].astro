@@ -1,0 +1,134 @@
+---
+export const prerender = false;
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import WikiLayout from "../../components/layout/WikiLayout.astro";
+import PageEditor from "../../components/submit/PageEditor.astro";
+import { getSubmissionByToken } from "../../lib/db";
+import { getCategories } from "../../lib/getCategories";
+
+const id = Number(Astro.params.id);
+const token = Astro.url.searchParams.get("token") ?? "";
+const row = Number.isInteger(id) ? await getSubmissionByToken(id, token) : null;
+if (!row) return new Response(null, { status: 404 });
+
+const sent = Astro.url.searchParams.has("sent");
+const categoryNames = Object.keys(
+  getCategories(await getCollection("wiki")),
+).sort();
+
+const label: Record<string, string> = {
+  pending: "Waiting for an editor",
+  changes_requested: "Changes requested",
+  approved: "Published",
+  rejected: "Not accepted",
+};
+---
+
+<Base title={`Your submission — ${row.title}`} noindex>
+  <WikiLayout showToc={false}>
+    <header class="sub-head">
+      <span class:list={["status", `status--${row.status}`]}>
+        {label[row.status]}
+      </span>
+      <h1>{row.title}</h1>
+      {row.revision > 1 && <p class="rev">Revision {row.revision}</p>}
+    </header>
+
+    {
+      sent && (
+        <div class="notebox" style="--note-color: var(--green)">
+          <div class="notebox-header">
+            <span class="notebox-title">Sent back</span>
+          </div>
+          <div class="notebox-body">Your revision is in the queue again.</div>
+        </div>
+      )
+    }
+
+    {
+      row.status === "changes_requested" && row.review_note && (
+        <div class="notebox" style="--note-color: var(--yellow)">
+          <div class="notebox-header">
+            <span class="notebox-title">Editor feedback</span>
+          </div>
+          <div class="notebox-body">{row.review_note}</div>
+        </div>
+      )
+    }
+
+    {
+      row.status === "approved" ? (
+        <p class="done">
+          This is live at <a href={`/wiki/c/${row.slug}`}>/wiki/c/{row.slug}</a>
+          .
+        </p>
+      ) : row.status === "rejected" ? (
+        <p class="done">An editor decided not to publish this one.</p>
+      ) : (
+        <PageEditor
+          action={`/api/submissions/${row.id}`}
+          submitLabel={
+            row.status === "changes_requested"
+              ? "Send revision"
+              : "Save changes"
+          }
+          showAuthor={false}
+          hidden={{ token }}
+          categoryNames={categoryNames}
+          values={{
+            title: row.title,
+            description: row.description,
+            categories: row.categories,
+            tags: row.tags,
+            body: row.body,
+          }}
+        />
+      )
+    }
+  </WikiLayout>
+</Base>
+
+<style>
+  .sub-head {
+    margin-bottom: 1.5rem;
+  }
+  .sub-head h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 2.4rem;
+    letter-spacing: -0.02em;
+    margin: 0.5rem 0 0;
+  }
+  .status {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .status--changes_requested {
+    color: var(--yellow);
+    border-color: var(--yellow);
+  }
+  .status--approved {
+    color: var(--green);
+    border-color: var(--green);
+  }
+  .status--rejected {
+    color: var(--red);
+    border-color: var(--red);
+  }
+  .rev {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+  .done {
+    color: var(--text-secondary);
+  }
+</style>

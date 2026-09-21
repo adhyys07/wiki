@@ -72,7 +72,7 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
       .filter(Boolean)
       .slice(0, 8);
 
-  const id = await createSubmission({
+  const { id, token } = await createSubmission({
     title,
     slug,
     description,
@@ -83,7 +83,14 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
     author_contact: str("author_contact").slice(0, 160),
   });
 
-  return new Response(JSON.stringify({ ok: true, id, slug }), {
-    headers: { "content-type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      id,
+      slug,
+      message: `Thanks — an editor will review this and it will appear at /wiki/c/${slug} once approved.`,
+      resumeUrl: `/contribute/${id}?token=${token}`,
+    }),
+    { headers: { "content-type": "application/json" } },
+  );
 };

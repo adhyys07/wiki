@@ -1,9 +1,10 @@
 import pg from "pg";
+import crypto from "node:crypto";
 import { ENV } from "./env";
 
 const { Pool } = pg;
 
-export type Status = "pending" | "approved" | "rejected";
+export type Status = "pending" | "approved" | "rejected" | "changes_requested";
 
 export interface Submission {
   id: number;
@@ -20,6 +21,36 @@ export interface Submission {
   created_at: Date;
   reviewed_at: Date | null;
   reviewed_by: string | null;
+  /** Feedback the AUTHOR sees. Distinct from admin_note, which stays internal. */
+  review_note: string;
+  /** Secret that lets an author return to their submission without an account. */
+  edit_token: string | null;
+  revision: number;
+}
+
+export interface SubmissionEvent {
+  id: number;
+  submission_id: number;
+  actor: string;
+  action: string;
+  note: string;
+  created_at: Date;
+}
+
+export interface Submission {
+  review_note: string;
+  /** Secret that lets an author return to their submission without an account. */
+  edit_token: string | null;
+  revision: number;
+}
+
+export interface SubmissionEvent {
+  id: number;
+  submission_id: number;
+  actor: string;
+  action: string;
+  note: string;
+  created_at: Date;
 }
 
 let pool: pg.Pool | undefined;
@@ -75,8 +106,51 @@ export function ensureSchema() {
       CREATE INDEX IF NOT EXISTS submissions_status_created
         ON submissions (status, created_at DESC);
     `);
+
+    // --- migrations (idempotent) ---
+    await getPool().query(`
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS review_note text NOT NULL DEFAULT '';
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS edit_token  text;
+      ALTER TABLE submissions ADD COLUMN IF NOT EXISTS revision    integer NOT NULL DEFAULT 1;
+
+      -- Guarded: a bare DROP/ADD would take an ACCESS EXCLUSIVE lock and
+      -- revalidate the whole table on every process start.
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+           WHERE conrelid = 'submissions'::regclass
+             AND conname  = 'submissions_status_check'
+             AND pg_get_constraintdef(oid) LIKE '%changes_requested%'
+        ) THEN
+          ALTER TABLE submissions DROP CONSTRAINT IF EXISTS submissions_status_check;
+          ALTER TABLE submissions ADD CONSTRAINT submissions_status_check
+            CHECK (status IN ('pending','approved','rejected','changes_requested'));
+        END IF;
+      END $$;
+
+      UPDATE submissions
+         SET edit_token = md5(random()::text || clock_timestamp()::text || id::text)
+       WHERE edit_token IS NULL;
+
+      CREATE TABLE IF NOT EXISTS submission_events (
+        id            bigserial PRIMARY KEY,
+        submission_id bigint NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+        actor         text NOT NULL,
+        action        text NOT NULL,
+        note          text NOT NULL DEFAULT '',
+        created_at    timestamptz NOT NULL DEFAULT now()
+      );
+
+      CREATE INDEX IF NOT EXISTS submission_events_sub
+        ON submission_events (submission_id, created_at);
+    `);
   })();
   return schemaReady;
+}
+
+export function newEditToken(): string {
+  return crypto.randomBytes(24).toString("base64url");
 }
 
 export async function createSubmission(
@@ -91,12 +165,14 @@ export async function createSubmission(
     | "author_name"
     | "author_contact"
   >,
-): Promise<number> {
+): Promise<{ id: number; token: string }> {
   await ensureSchema();
+  const token = newEditToken();
   const { rows } = await getPool().query<{ id: number }>(
     `INSERT INTO submissions
-       (title, slug, description, categories, tags, body, author_name, author_contact)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       (title, slug, description, categories, tags, body,
+        author_name, author_contact, edit_token)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      RETURNING id`,
     [
       s.title,
@@ -107,9 +183,11 @@ export async function createSubmission(
       s.body,
       s.author_name,
       s.author_contact,
+      token,
     ],
   );
-  return rows[0].id;
+  await logEvent(rows[0].id, s.author_name || "anonymous", "submitted");
+  return { id: rows[0].id, token };
 }
 
 export async function listSubmissions(status?: Status): Promise<Submission[]> {
@@ -128,7 +206,12 @@ export async function countByStatus(): Promise<Record<Status, number>> {
   const { rows } = await getPool().query<{ status: Status; n: string }>(
     `SELECT status, count(*) AS n FROM submissions GROUP BY status`,
   );
-  const out: Record<Status, number> = { pending: 0, approved: 0, rejected: 0 };
+  const out: Record<Status, number> = {
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    changes_requested: 0,
+  };
   for (const r of rows) out[r.status] = Number(r.n);
   return out;
 }
@@ -203,6 +286,138 @@ export async function reviewSubmission(
         ok: false,
         error: "Another approved page already uses that URL. Change the slug.",
       };
+    }
+    throw err;
+  }
+}
+
+export async function logEvent(
+  submissionId: number,
+  actor: string,
+  action: string,
+  note = "",
+): Promise<void> {
+  await getPool().query(
+    `INSERT INTO submission_events (submission_id, actor, action, note)
+     VALUES ($1,$2,$3,$4)`,
+    [submissionId, actor, action, note],
+  );
+}
+
+export async function listEvents(
+  submissionId: number,
+): Promise<SubmissionEvent[]> {
+  await ensureSchema();
+  const { rows } = await getPool().query<SubmissionEvent>(
+    `SELECT * FROM submission_events
+      WHERE submission_id = $1
+      ORDER BY created_at ASC`,
+    [submissionId],
+  );
+  return rows;
+}
+
+/** Token lookup is constant-time so the endpoint can't be used as an oracle. */
+export async function getSubmissionByToken(
+  id: number,
+  token: string,
+): Promise<Submission | null> {
+  const row = await getSubmission(id);
+  if (!row?.edit_token || !token) return null;
+  const a = Buffer.from(row.edit_token);
+  const b = Buffer.from(token);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  return row;
+}
+
+export async function requestChanges(
+  id: number,
+  reviewedBy: string,
+  reviewNote: string,
+  adminNote = "",
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureSchema();
+  if (!reviewNote.trim()) {
+    return { ok: false, error: "Tell the author what needs changing." };
+  }
+  const { rowCount } = await getPool().query(
+    `UPDATE submissions SET
+       status      = 'changes_requested',
+       review_note = $2,
+       admin_note  = COALESCE(NULLIF($3,''), admin_note),
+       reviewed_by = $4,
+       reviewed_at = now()
+     WHERE id = $1`,
+    [id, reviewNote, adminNote, reviewedBy],
+  );
+  if (!rowCount) return { ok: false, error: "Submission not found." };
+  await logEvent(id, reviewedBy, "changes_requested", reviewNote);
+  return { ok: true };
+}
+
+/** Author revises and sends it back to the queue. */
+export async function resubmit(
+  id: number,
+  fields: {
+    title: string;
+    description: string;
+    body: string;
+    categories: string[];
+    tags: string[];
+  },
+): Promise<void> {
+  await getPool().query(
+    `UPDATE submissions SET
+       title = $2, description = $3, body = $4,
+       categories = $5, tags = $6,
+       status = 'pending',
+       revision = revision + 1,
+       review_note = ''
+     WHERE id = $1`,
+    [
+      id,
+      fields.title,
+      fields.description,
+      fields.body,
+      fields.categories,
+      fields.tags,
+    ],
+  );
+  await logEvent(id, "author", "resubmitted");
+}
+
+/** Admin writes a page and publishes it straight away - no queue. */
+export async function createAdminPost(
+  s: Pick<
+    Submission,
+    "title" | "slug" | "description" | "categories" | "tags" | "body"
+  >,
+  author: string,
+): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
+  await ensureSchema();
+  try {
+    const { rows } = await getPool().query<{ id: number }>(
+      `INSERT INTO submissions
+         (title, slug, description, categories, tags, body,
+          author_name, status, reviewed_by, reviewed_at, edit_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'approved',$7,now(),$8)
+       RETURNING id`,
+      [
+        s.title,
+        s.slug,
+        s.description,
+        s.categories,
+        s.tags,
+        s.body,
+        author,
+        newEditToken(),
+      ],
+    );
+    await logEvent(rows[0].id, author, "posted_directly");
+    return { ok: true, id: rows[0].id };
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      return { ok: false, error: "An approved page already uses that URL." };
     }
     throw err;
   }
